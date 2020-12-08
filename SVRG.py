@@ -5,6 +5,7 @@
 # Gradient Descent using Predictive Variance Reduction" by
 # Johnson and Zhang
 
+import torch
 import torch.optim.Optimizer
 
 
@@ -29,7 +30,28 @@ class SVRG(Optimizer):
         super(SVRG, self).__init__(params, defaults)
 
 
+    @torch.no_grad()
     def step(self, closure=None):
-        pass
-        
+        ''' Performs a single SVRG optimization step.
 
+        Parameters:
+            closure: N/A (reevaluates the model and returns the loss)
+        '''
+        loss = None
+        
+        # Iterating through a list of model parameters
+        for group in self.param_groups:
+            update_freq = group['update_freq']
+
+            # Iterating through parameters in group (TODO: Elucidate)
+            for p in group['params']:        
+                if p.grad is None:
+                    continue
+                d_p = p.grad
+                # The alpha parameter specifies the multiplier for
+                # d_p before it is added to the current parameter
+                # weight value.
+                # TODO: In this expression, replace d_p with d_p-d_ws+mu
+                p.add_(d_p, alpha=-group['lr'])
+
+        return loss
