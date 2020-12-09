@@ -45,7 +45,63 @@ def get_logistic_loss(X, y, w, reg):
     return loss
 
 
-def SVRG_logistic(X, y, update_freq, lr=10, eps=0.1):
+def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
+    ''' Implements SGD using exponential decay learning rate scheduling.
+    
+    Parameters:
+        X (np.ndarray) : The training set
+        y (np.ndarray) : The target values
+        init_lr (float) : The schedulers initial learning rate (Default: 1e-3)
+        a (float) : The base of the learning rate scheduler; gets
+                    exponentiated. (Default: 2.0)
+
+    Returns:
+        Model weights (np.ndarray)
+    '''
+    N = len(X)
+    m = len(X[0])
+    num_epochs = 30
+    w = np.random.rand(m)
+    y = y.reshape((y.shape[0],))
+    grad_norm = eps + 1
+    iter_num = 0
+    while grad_norm > eps:
+        rand_idx = random.randint(0,N-1)
+        grad = (y[rand_idx]-sigmoid(np.dot(w,X[rand_idx]))*X[rand_idx])
+        grad_norm = LA.norm(grad)
+        print(grad_norm)
+        #alpha_j = init_lr*a**(iter_num//N)
+        # Adding because objective function is concave
+        w = w + init_lr*grad#alpha_j*grad
+        iter_num += 1
+    
+    return w
+
+
+def train(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
+    '''Trains a logistic regression classifier using L2 regularization'''
+    N = len(X)
+    num_features = len(X[0])
+    w = np.ones(num_features)
+    grad_norm = epsilon + 1
+    iter_num = 0 
+    while grad_norm > epsilon and iter_num < max_iter:
+        y = y.reshape((y.shape[0],))
+        grad = (1/N)*X.T@(y-sigmoid(X@w))
+        grad_norm = LA.norm(grad)
+        w = w + lr*grad
+        # excludes the dummy variable
+        for i in range(num_features-1):
+            w[i] -= lr*reg*w[i]
+        iter_num += 1
+    
+    print('\n{} iterations until convergence'.format(iter_num))
+    print('Grad. Norm at Convergence: {}'.format(grad_norm))
+    print('Training Data Loss: {}'.format(get_logistic_loss(X, y, w, reg)))
+    return w
+
+
+def SVRG_logistic(X, y, update_freq, lr=0.1, eps=0.01):
     ''' Implements SVRG for logistic regression objective
 
     Parameters:
@@ -116,7 +172,9 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     
     # Comparison with CVX perhaps?
     update_freq = 10
-    w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), update_freq)
+    #w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), update_freq)
+    #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    w = train(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
     print('Accuracy: {}'.format(accuracy(X_test.to_numpy(), y_test.to_numpy(), w)))
 
 
@@ -189,9 +247,23 @@ def accuracy(X, y, w):
             
 
 def main():
-    data = pd.read_csv('data/heart/heart.csv')
-    n_data = data_normalize(data, exempt_labels=['target'])
-    X_train, y_train, X_test, y_test = data_split(n_data)
+    VERIFICATION = 0
+    HEART_ATTACK = 1
+    FASHION_MNIST = 2
+
+    dataset = VERIFICATION #[0, 1, 2]
+
+    if dataset == VERIFICATION:
+        X_train = pd.read_csv('data/test/pa3_train_X.csv')
+        y_train = pd.read_csv('data/test/pa3_train_y.csv')
+        X_test = pd.read_csv('data/test/pa3_dev_X.csv')
+        y_test = pd.read_csv('data/test/pa3_dev_y.csv')
+    elif dataset == HEART_ATTACK:
+        data = pd.read_csv('data/heart/heart.csv')
+        n_data = data_normalize(data, exempt_labels=['target'])
+        X_train, y_train, X_test, y_test = data_split(n_data)
+
+    # Pass along dataframes to experiment runner
     SVRG_testbed(X_train, y_train, X_test, y_test) 
 
     # If another model is built/used, can call SVRG_testbed on that
