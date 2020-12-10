@@ -45,7 +45,7 @@ def get_logistic_loss(X, y, w, reg):
     return loss
 
 
-def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=1e-3):
+def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
     ''' Implements SGD using exponential decay learning rate scheduling.
     
     Parameters:
@@ -65,14 +65,15 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=1e-3):
     y = y.reshape((y.shape[0],))
     grad_norm = eps + 1
     iter_num = 0
-    t0, t1 = 5, 50
+    # If the gradient l2 norm falls below our specified epsilon value,
+    # then we have attained convergence 
     while grad_norm > eps:
         rand_idx = random.randint(0,N-1)
-        print(rand_idx)
-        grad = (y[rand_idx]-sigmoid(np.dot(w,X[rand_idx]))*X[rand_idx])
+        grad = (y[rand_idx]-sigmoid(np.dot(w,X[rand_idx])))*X[rand_idx]
         grad_norm = LA.norm(grad)
         print(grad_norm)
-        alpha_j = t0 / (iter_num + t1)#init_lr*a**(iter_num//N)
+        # Updating our learning rate from schedule
+        alpha_j = init_lr*a**(iter_num//N)
         # Adding because objective function is concave
         w = w + alpha_j*grad
         iter_num += 1
@@ -131,7 +132,7 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
     # Initialize SVRG weights by performing a single SGD iteration on
     # a random training example.
     rand_ind = random.randint(0,N-1)
-    w_tilde_prev = lr*(y[rand_ind]-sigmoid(np.dot(w,X[rand_ind]))*X[rand_ind])
+    w_tilde_prev = lr*(y[rand_ind]-sigmoid(np.dot(w,X[rand_ind])))*X[rand_ind]
     
     # Choosing to optimize until convergence, I maintain a count on the
     # outer iteration number, but semantically rely on convergence to
@@ -144,7 +145,7 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
         # Calculate mu_tilde
         for j in range(N):
             # adding (1/N) times the gradient associated with the ith example
-            mu_tilde += (1/N)*(y[j]-sigmoid(np.dot(w,X[j]))*X[j])
+            mu_tilde += (1/N)*(y[j]-sigmoid(np.dot(w,X[j])))*X[j]
         # Finding the Euclidian norm of our objective's gradient
         grad_norm = LA.norm(mu_tilde)
         print(grad_norm)
@@ -154,8 +155,8 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
             #loss.append(get_logistic_loss(X, y, w, 0))
             for j in range(update_freq):
                 rand_ind = random.randint(0,N-1)
-                w_grad = (y[rand_ind]-sigmoid(np.dot(w,X[rand_ind]))*X[rand_ind])
-                w_tilde_grad = (y[rand_ind]-sigmoid(np.dot(w_tilde,X[rand_ind]))*X[rand_ind])
+                w_grad = (y[rand_ind]-sigmoid(np.dot(w,X[rand_ind])))*X[rand_ind]
+                w_tilde_grad = (y[rand_ind]-sigmoid(np.dot(w_tilde,X[rand_ind])))*X[rand_ind]
                 # SVRG Update step. Note that our objective function is concave, so we are
                 # using gradient ascent
                 w = w + lr*(w_grad - w_tilde_grad + mu_tilde)
@@ -171,13 +172,28 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
 
 def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Iterate over frequencies (for each model)
-    
     # Comparison with CVX perhaps?
-    update_freq = 10
-    #w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), update_freq)
-    w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
+    SVRG_ws = []
+    SVRG_tot_iters = []
+    SVRG_s_iters = []
+    SVRG_accuracies = []
+    for freq in update_freqs:
+        w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+        SVRG_ws.append(w)
+        SVRG_tot_iters.append(tot_iters)
+        SVRG_s_iters.append(tot_iters)
+        SVRG_accuracies.append(accuracy(X_test.to_numpy(), y_test.to_numpy(), w))
+
+    plt.figure(1)
+    plt.plot(update_freqs, SVRG_s_iters)
+    plt.xlabel('Update Frequency, m')
+    plt.ylabel('Average Gradient Calculations')
+    plt.title('Number of Average Gradient Calculations Until Convergence')
+    plt.savefig('SVRG_avg_grad_calcs_v_freq.png')
+    #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
-    print('Accuracy: {}'.format(accuracy(X_test.to_numpy(), y_test.to_numpy(), w)))
+    #print('Accuracy: {}'.format(accuracy(X_test.to_numpy(), y_test.to_numpy(), w)))
 
 
 def data_normalize(X_raw, exempt_labels=[]):
