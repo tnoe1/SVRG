@@ -6,10 +6,12 @@
 import numpy as np
 import pandas as pd
 from numpy import linalg as LA
-import matplotlib.pyplot as plt
 import mnist_reader
 import random
 import math
+import matplotlib.pyplot as plt
+plt.rc('text', usetex=True)
+
 
 def sigmoid(x):
     '''
@@ -195,7 +197,7 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
 def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Iterate over frequencies (for each model)
     # Comparison with CVX perhaps?
-    update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
+    update_freqs = [2]#,5,10,15,20,25,30,35,40,45,50,75,100]
     SVRG_ws = []
     SVRG_tot_iters = []
     SVRG_s_iters = []
@@ -210,8 +212,8 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.figure(1)
     plt.plot(update_freqs, SVRG_s_iters)
     plt.xlabel('Update Frequency, m')
-    plt.ylabel('$\~\mu$ Calculations')
-    plt.title('Health Insurance: Number of $\~\mu$ Calculations Until Convergence')
+    plt.ylabel('$\tilde{\mu}$ Calculations')
+    plt.title('Health Insurance: Number of $\tilde{\mu}$ Calculations Until Convergence')
     plt.savefig('SVRG_avg_grad_calcs_v_freq.png')
     #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
