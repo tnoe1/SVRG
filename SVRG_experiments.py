@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from numpy import linalg as LA
 import matplotlib.pyplot as plt
+import mnist_reader
 import random
 import math
 
@@ -104,6 +105,27 @@ def GD_logistic(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
     return w
 
 
+def SVRG_mc_logistic(X, y, update_freq, lr=0.5, eps=0.01):
+    ''' Implements SVRG for multiclass logistic regression
+    
+    Parameters:
+        X (np.ndarray) : The training set
+        y (np.ndarray) : The target values
+        update_freq (int) : The number of iterations between every
+                            average gradient update
+        lr (float) : The learning rate (Default: 1e-3)
+
+    Returns:
+        Model weights (np.ndarray)
+    
+    .. R. Johnson, T. Zhang. Accelerating Stochastic Gradient Descent using
+           Predictive Variance Reduction. NIPS, 2013.
+
+    '''
+    
+    pass
+
+
 def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
     ''' Implements SVRG for logistic regression objective
 
@@ -182,14 +204,14 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
         w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
         SVRG_ws.append(w)
         SVRG_tot_iters.append(tot_iters)
-        SVRG_s_iters.append(tot_iters)
+        SVRG_s_iters.append(s_iters)
         SVRG_accuracies.append(accuracy(X_test.to_numpy(), y_test.to_numpy(), w))
 
     plt.figure(1)
     plt.plot(update_freqs, SVRG_s_iters)
     plt.xlabel('Update Frequency, m')
-    plt.ylabel('Average Gradient Calculations')
-    plt.title('Number of Average Gradient Calculations Until Convergence')
+    plt.ylabel('\~\mu Calculations')
+    plt.title('Health Insurance: Number of \~\mu Calculations Until Convergence')
     plt.savefig('SVRG_avg_grad_calcs_v_freq.png')
     #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
@@ -291,19 +313,24 @@ def load_clean_verif_data():
     
 
 def main():
-    VERIFICATION = 0
+    HEALTH_INSURANCE = 0
     HEART_ATTACK = 1
     FASHION_MNIST = 2
 
-    dataset = VERIFICATION #[0, 1, 2]
+    dataset = HEALTH_INSURANCE #[0, 1, 2]
 
-    if dataset == VERIFICATION:
+    if dataset == HEALTH_INSURANCE:
         X_train, y_train, X_test, y_test = load_clean_verif_data()       
  
     elif dataset == HEART_ATTACK:
         data = pd.read_csv('data/heart/heart.csv')
         n_data = data_normalize(data, exempt_labels=['target'])
         X_train, y_train, X_test, y_test = data_split(n_data)
+
+    elif dataset == FASHION_MNIST:
+        X_train, y_train = mnist_reader.load_mnist('data/fashion', kind='train')
+        X_test, y_test = mnist_reader.load_mnist('data/fashion', kind='t10k')    
+    
 
     # Pass along dataframes to experiment runner
     SVRG_testbed(X_train, y_train, X_test, y_test) 
