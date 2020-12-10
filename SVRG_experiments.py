@@ -45,7 +45,7 @@ def get_logistic_loss(X, y, w, reg):
     return loss
 
 
-def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
+def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=1e-3):
     ''' Implements SGD using exponential decay learning rate scheduling.
     
     Parameters:
@@ -65,20 +65,22 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
     y = y.reshape((y.shape[0],))
     grad_norm = eps + 1
     iter_num = 0
+    t0, t1 = 5, 50
     while grad_norm > eps:
         rand_idx = random.randint(0,N-1)
+        print(rand_idx)
         grad = (y[rand_idx]-sigmoid(np.dot(w,X[rand_idx]))*X[rand_idx])
         grad_norm = LA.norm(grad)
         print(grad_norm)
-        #alpha_j = init_lr*a**(iter_num//N)
+        alpha_j = t0 / (iter_num + t1)#init_lr*a**(iter_num//N)
         # Adding because objective function is concave
-        w = w + init_lr*grad#alpha_j*grad
+        w = w + alpha_j*grad
         iter_num += 1
     
     return w
 
 
-def train(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
+def GD_logistic(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
     '''Trains a logistic regression classifier using L2 regularization'''
     N = len(X)
     num_features = len(X[0])
@@ -101,7 +103,7 @@ def train(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
     return w
 
 
-def SVRG_logistic(X, y, update_freq, lr=0.1, eps=0.01):
+def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
     ''' Implements SVRG for logistic regression objective
 
     Parameters:
@@ -173,8 +175,8 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Comparison with CVX perhaps?
     update_freq = 10
     #w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), update_freq)
-    #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
-    w = train(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
+    w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
     print('Accuracy: {}'.format(accuracy(X_test.to_numpy(), y_test.to_numpy(), w)))
 
 
@@ -243,8 +245,34 @@ def accuracy(X, y, w):
     correct = np.equal(np.round(sigmoid(X@w)),y)
     num_correct = np.count_nonzero(correct == True)
     return num_correct / N
+
+
+def normalize_verif(X, num_stats=None):
+    '''Normalizes numerical features in given dataset'''
+    NUMERICAL = ['Age', 'Annual_Premium', 'Vintage']
+    if num_stats is None:
+        num_stats = X[NUMERICAL].describe()
+ 
+    for label in NUMERICAL:
+        l_min = num_stats[label]['min']
+        l_max = num_stats[label]['max']
+        X[label] = (X[label].subtract(l_min)).div(l_max - l_min)
+        
+    return X, num_stats
+
+
+def load_clean_verif_data():
+    '''Loads and normalizes dataset'''
+    X_train = pd.read_csv('data/health_insurance/insurance_train_X.csv')
+    X_dev   = pd.read_csv('data/health_insurance/insurance_test_X.csv')
+    y_train = pd.read_csv('data/health_insurance/insurance_train_y.csv')
+    y_dev   = pd.read_csv('data/health_insurance/insurance_test_y.csv')
+
+    X_train, num_stats = normalize_verif(X_train)
+    X_dev, _ = normalize_verif(X_dev, num_stats=num_stats)
+
+    return X_train, y_train, X_dev, y_dev
     
-            
 
 def main():
     VERIFICATION = 0
@@ -254,10 +282,8 @@ def main():
     dataset = VERIFICATION #[0, 1, 2]
 
     if dataset == VERIFICATION:
-        X_train = pd.read_csv('data/test/pa3_train_X.csv')
-        y_train = pd.read_csv('data/test/pa3_train_y.csv')
-        X_test = pd.read_csv('data/test/pa3_dev_X.csv')
-        y_test = pd.read_csv('data/test/pa3_dev_y.csv')
+        X_train, y_train, X_test, y_test = load_clean_verif_data()       
+ 
     elif dataset == HEART_ATTACK:
         data = pd.read_csv('data/heart/heart.csv')
         n_data = data_normalize(data, exempt_labels=['target'])
