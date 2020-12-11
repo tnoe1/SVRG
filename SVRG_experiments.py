@@ -197,9 +197,10 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
 def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Iterate over frequencies (for each model)
     # Comparison with CVX perhaps?
+    
     text_format = {'color': 'k', 'fontsize': 16}
     #title_text_format = {'color': 'k', 'fontsize': 16}
-    update_freqs = [2]#,5,10,15,20,25,30,35,40,45,50,75,100]
+    update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
     SVRG_ws = []
     SVRG_tot_iters = []
     SVRG_s_iters = []
@@ -216,9 +217,12 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.xlabel('Update Frequency, m', text_format)
     plt.ylabel('$\\tilde{\mu}$ Calculations', text_format)
     plt.title('Health Insurance: Number of $\\tilde{\mu}$ Calculations Until Convergence',text_format)
-    plt.savefig('SVRG_avg_grad_calcs_v_freq.png')
+    plt.savefig('SVRG_health_insurance_avg_grad_calcs_v_freq.png')
     #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
+    
+    #freq = 10
+    #w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
     #print('Accuracy: {}'.format(accuracy(X_test.to_numpy(), y_test.to_numpy(), w)))
 
 
