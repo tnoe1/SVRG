@@ -48,7 +48,7 @@ def get_logistic_loss(X, y, w, reg):
     return loss
 
 
-def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
+def SGD_logistic(X, y, init_lr=0.1, a=2, eps=0.01): # Before init_lr 1e-3, a =1.1
     ''' Implements SGD using exponential decay learning rate scheduling.
     
     Parameters:
