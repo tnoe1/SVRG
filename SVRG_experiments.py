@@ -80,12 +80,11 @@ def SGD_logistic(X, y, init_lr=1, a=2, eps=0.01): # Before init_lr 1e-3, a =1.1
         print(grad_norm)
         # Updating our learning rate from schedule
         alpha_j = init_lr*a**(iter_num//N)
-        scaled_grad_norms.append(alpha_j*grad_norm)
+        scaled_grad_norm = LA.norm(alpha_j*grad)
+        scaled_grad_norms.append(scaled_grad_norm)
         # Adding because objective function is concave
         w = w + alpha_j*grad
         iter_num += 1
-        print('grad norms length: {}'.format(len(grad_norms)))
-        print('scaled grad norms length: {}'.format(len(scaled_grad_norms)))
     
     return w, grad_norms, scaled_grad_norms
 
