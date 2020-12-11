@@ -258,14 +258,14 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.xlabel('Iteration Number, $r$', text_format)
     plt.ylabel('$\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
     plt.title('Convergence Behavior of SGD', text_format)
-    plt.savefig('SGD_Convergence_ex.png')
+    plt.savefig('plots/SGD_Convergence_ex.png')
 
     plt.figure(2)
     plt.plot(grad_norms_svrg)
     plt.xlabel('Iteration Number, $s$', text_format)
     plt.ylabel('$\\|g(x^{(s)},\\xi_s)\\|_2$', text_format)
     plt.title('Convergence Behavior of SVRG', text_format)
-    plt.savefig('SVRG_Convergence_ex.png')
+    plt.savefig('plots/SVRG_Convergence_ex.png')
     #title_text_format = {'color': 'k', 'fontsize': 16}
     '''
     update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
