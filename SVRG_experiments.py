@@ -86,7 +86,7 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
     return w, grad_norms
 
 
-def GD_logistic(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
+def GD_logistic(X, y, lr=1e-3, max_iter=10000, epsilon=0.1):
     '''Trains a logistic regression classifier using L2 regularization'''
     N = len(X)
     num_features = len(X[0])
@@ -98,83 +98,12 @@ def GD_logistic(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
         grad = (1/N)*X.T@(y-sigmoid(X@w))
         grad_norm = LA.norm(grad)
         w = w + lr*grad
-        # excludes the dummy variable
-        for i in range(num_features-1):
-            w[i] -= lr*reg*w[i]
         iter_num += 1
     
     print('\n{} iterations until convergence'.format(iter_num))
     print('Grad. Norm at Convergence: {}'.format(grad_norm))
     print('Training Data Loss: {}'.format(get_logistic_loss(X, y, w, reg)))
     return w
-
-
-def SVRG_multiclass_logistic(X, y, update_freq, lr=0.5, eps=0.01):
-    ''' Implements SVRG for multiclass logistic regression
-    
-    Parameters:
-        X (np.ndarray) : The training set
-        y (np.ndarray) : The target values
-        update_freq (int) : The number of iterations between every
-                            average gradient update
-        lr (float) : The learning rate (Default: 1e-3)
-
-    Returns:
-        Model weights (np.ndarray)
-    
-    .. R. Johnson, T. Zhang. Accelerating Stochastic Gradient Descent using
-           Predictive Variance Reduction. NIPS, 2013.
-
-    '''
-    grad_norm = eps + 1         
-    N = len(X)
-    m = len(X[0])
-    #w = np.ones((k,m))
-    w = np.ones(m)
-    s_iter_count = 0
-    tot_iter_count = 0
-    loss = []
-    loss_s = []
-
-    # Initialize SVRG weights by performing a single SGD iteration on
-    # a random training example.
-    rand_ind = random.randint(0,N-1)
-    w_tilde_prev = lr*(y[rand_ind]-sigmoid(np.dot(w,X[rand_ind])))*X[rand_ind]
-    
-    # Choosing to optimize until convergence, I maintain a count on the
-    # outer iteration number, but semantically rely on convergence to
-    # determine when it is appropriate to stop
-    while grad_norm > eps:
-        w_tilde = w_tilde_prev
-        # Logging loss for this outer iteration
-        #loss_s.append(get_logistic_loss(X, y, w_tilde, 0))
-        mu_tilde = 0
-        # Calculate mu_tilde
-        for j in range(N):
-            # adding (1/N) times the gradient associated with the ith example
-            mu_tilde += (1/N)*(y[j]-sigmoid(np.dot(w,X[j])))*X[j]
-        # Finding the Euclidian norm of our objective's gradient
-        grad_norm = LA.norm(mu_tilde)
-        print(grad_norm)
-        # If the convergence is reached, then skip the next inner loop
-        if grad_norm > eps:
-            w = w_tilde
-            #loss.append(get_logistic_loss(X, y, w, 0))
-            for j in range(update_freq):
-                rand_ind = random.randint(0,N-1)
-                w_grad = (y[rand_ind]-sigmoid(np.dot(w,X[rand_ind])))*X[rand_ind]
-                w_tilde_grad = (y[rand_ind]-sigmoid(np.dot(w_tilde,X[rand_ind])))*X[rand_ind]
-                # SVRG Update step. Note that our objective function is concave, so we are
-                # using gradient ascent
-                w = w + lr*(w_grad - w_tilde_grad + mu_tilde)
-                #loss.append(get_logistic_loss(X, y, w, 0))
-                tot_iter_count += 1
-        
-            # Updating the weights using option I from the paper
-            w_tilde_prev = w
-            s_iter_count += 1
-
-    return w_tilde, tot_iter_count, s_iter_count
 
 
 def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
@@ -249,16 +178,17 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Comparison with CVX perhaps?
     
     text_format = {'color': 'k', 'fontsize': 20}
+    
     freq = 10
     w_sgd, grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
     iters = np.arange(len(grad_norms_svrg))
     plt.figure(1)
-    plt.plot(iters, grad_norms_sgd[:len(grad_norms_svrg)])
+    plt.plot(grad_norms_sgd)
     plt.xlabel('Iteration Number, $r$', text_format)
     plt.ylabel('$\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
     plt.title('Convergence Behavior of SGD', text_format)
-    plt.savefig('plots/SGD_Convergence_ex.png')
+    plt.savefig('plots/SGD_Full_Convergence_ex.png')
 
     plt.figure(2)
     plt.plot(grad_norms_svrg)
@@ -286,7 +216,6 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.ylabel('$\\tilde{\mu}$ Calculations', text_format)
     plt.title('Health Insurance: Number of $\\tilde{\mu}$ Calculations Until Convergence',text_format)
     plt.savefig('SVRG_health_insurance_avg_grad_calcs_v_freq.png')
-    '''
     
     #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
@@ -294,6 +223,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     #freq = 10
     #w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
     #print('Accuracy: {}'.format(accuracy(X_test.to_numpy(), y_test.to_numpy(), w)))
+    '''
 
 
 def data_normalize(X_raw, exempt_labels=[]):
@@ -393,7 +323,7 @@ def load_clean_verif_data():
 def main():
     HEALTH_INSURANCE = 0
     HEART_ATTACK = 1
-    FASHION_MNIST = 2
+    #FASHION_MNIST = 2
 
     # Choose a dataset
     dataset = HEALTH_INSURANCE #[0, 1, 2]
@@ -406,11 +336,13 @@ def main():
         n_data = data_normalize(data, exempt_labels=['target'])
         X_train, y_train, X_test, y_test = data_split(n_data)
 
-    elif dataset == FASHION_MNIST:
-        X_train, y_train = mnist_reader.load_mnist('data/fashion', kind='train')
-        X_test, y_test = mnist_reader.load_mnist('data/fashion', kind='t10k')    
-        print('single y val: {}'.format(y_train[0]))
-        print('single X shape: {}'.format(X_train[0].shape))
+    #elif dataset == FASHION_MNIST:
+        #X_train, y_train = mnist_reader.load_mnist('data/fashion', kind='train')
+        #X_test, y_test = mnist_reader.load_mnist('data/fashion', kind='t10k')
+        #freq = 20    
+        #W = SVRG_multiclass_logistic(X_train, y_train, freq)
+        #print('single y val: {}'.format(y_train))
+        #print('single X shape: {}'.format(X_train[0].shape))
 
     # Pass along dataframes to experiment runner
     SVRG_testbed(X_train, y_train, X_test, y_test) 
