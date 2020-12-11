@@ -252,18 +252,19 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     freq = 10
     w_sgd, grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+    iters = np.arange(len(grad_norms_svrg))
     plt.figure(1)
-    plt.plot(grad_norms_sgd)
+    plt.plot(iters, grad_norms_sgd[:len(grad_norms_svrg)])
     plt.xlabel('Iteration Number, $r$', text_format)
     plt.ylabel('$\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
-    plt.title('Convergence of SGD', text_format)
+    plt.title('Convergence Behavior of SGD', text_format)
     plt.savefig('SGD_Convergence_ex.png')
 
     plt.figure(2)
     plt.plot(grad_norms_svrg)
     plt.xlabel('Iteration Number, $s$', text_format)
     plt.ylabel('$\\|g(x^{(s)},\\xi_s)\\|_2$', text_format)
-    plt.title('Convergence of SVRG', text_format)
+    plt.title('Convergence Behavior of SVRG', text_format)
     plt.savefig('SVRG_Convergence_ex.png')
     #title_text_format = {'color': 'k', 'fontsize': 16}
     '''
