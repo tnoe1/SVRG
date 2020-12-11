@@ -69,6 +69,7 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
     grad_norm = eps + 1
     iter_num = 0
     grad_norms = []
+    scaled_grad_norms = []
     # If the gradient l2 norm falls below our specified epsilon value,
     # then we have attained convergence 
     while grad_norm > eps:
@@ -79,11 +80,12 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
         print(grad_norm)
         # Updating our learning rate from schedule
         alpha_j = init_lr*a**(iter_num//N)
+        scaled_grad_norms.append(alpha_j*grad_norm)
         # Adding because objective function is concave
         w = w + alpha_j*grad
         iter_num += 1
     
-    return w, grad_norms
+    return w, grad_norms, scaled_grad_norms
 
 
 def GD_logistic(X, y, lr=1e-3, max_iter=10000, epsilon=0.1):
@@ -180,16 +182,26 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     text_format = {'color': 'k', 'fontsize': 20}
     
     freq = 10
-    w_sgd, grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    w_sgd, grad_norms_sgd, scaled_grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
     iters = np.arange(len(grad_norms_svrg))
+    
+    
     plt.figure(1)
     plt.plot(grad_norms_sgd)
     plt.xlabel('Iteration Number, $r$', text_format)
     plt.ylabel('$\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
-    plt.title('Convergence Behavior of SGD', text_format)
+    plt.title('Grad. Norm during SGD', text_format)
     plt.savefig('plots/SGD_Full_Convergence_ex.png')
 
+    plt.figure(2)
+    plt.plot(scaled_grad_norms_sgd)
+    plt.xlabel('Iteration Number, $r$', text_format)
+    plt.ylabel('$c(r)\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
+    plt.title('Scaled Grad. Norm during SGD', text_format)
+    plt.savefig('plots/SGD_Scaled_Full_Convergence_ex.png')
+
+    '''
     plt.figure(2)
     plt.plot(grad_norms_svrg)
     plt.xlabel('Iteration Number, $s$', text_format)
@@ -197,7 +209,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.title('Convergence Behavior of SVRG', text_format)
     plt.savefig('plots/SVRG_Convergence_ex.png')
     #title_text_format = {'color': 'k', 'fontsize': 16}
-    '''
+   
     update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
     SVRG_ws = []
     SVRG_tot_iters = []
