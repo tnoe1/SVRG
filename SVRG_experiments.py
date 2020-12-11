@@ -248,7 +248,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Iterate over frequencies (for each model)
     # Comparison with CVX perhaps?
     
-    text_format = {'color': 'k', 'fontsize': 16}
+    text_format = {'color': 'k', 'fontsize': 20}
     freq = 10
     w_sgd, grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
