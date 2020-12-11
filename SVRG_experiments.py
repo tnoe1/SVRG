@@ -68,12 +68,14 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
     y = y.reshape((y.shape[0],))
     grad_norm = eps + 1
     iter_num = 0
+    grad_norms = []
     # If the gradient l2 norm falls below our specified epsilon value,
     # then we have attained convergence 
     while grad_norm > eps:
         rand_idx = random.randint(0,N-1)
         grad = (y[rand_idx]-sigmoid(np.dot(w,X[rand_idx])))*X[rand_idx]
         grad_norm = LA.norm(grad)
+        grad_norms.append(grad_norm)
         print(grad_norm)
         # Updating our learning rate from schedule
         alpha_j = init_lr*a**(iter_num//N)
@@ -81,7 +83,7 @@ def SGD_logistic(X, y, init_lr=0.001, a=1.1, eps=0.01):
         w = w + alpha_j*grad
         iter_num += 1
     
-    return w
+    return w, grad_norms
 
 
 def GD_logistic(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
@@ -107,7 +109,7 @@ def GD_logistic(X, y, reg, lr=1e-3, max_iter=10000, epsilon=0.1):
     return w
 
 
-def SVRG_mc_logistic(X, y, update_freq, lr=0.5, eps=0.01):
+def SVRG_multiclass_logistic(X, y, update_freq, lr=0.5, eps=0.01):
     ''' Implements SVRG for multiclass logistic regression
     
     Parameters:
@@ -124,29 +126,10 @@ def SVRG_mc_logistic(X, y, update_freq, lr=0.5, eps=0.01):
            Predictive Variance Reduction. NIPS, 2013.
 
     '''
-    
-    pass
-
-
-def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
-    ''' Implements SVRG for logistic regression objective
-
-    Parameters:
-        X (np.ndarray) : The training set
-        y (np.ndarray) : The target values
-        update_freq (int) : The number of iterations between every
-                            average gradient update
-        lr (float) : The learning rate (Default: 1e-3)
-
-    Returns:
-        Model weights (np.ndarray)
-    
-    .. R. Johnson, T. Zhang. Accelerating Stochastic Gradient Descent using
-           Predictive Variance Reduction. NIPS, 2013.
-    '''
     grad_norm = eps + 1         
     N = len(X)
     m = len(X[0])
+    #w = np.ones((k,m))
     w = np.ones(m)
     s_iter_count = 0
     tot_iter_count = 0
@@ -194,19 +177,103 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
     return w_tilde, tot_iter_count, s_iter_count
 
 
+def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
+    ''' Implements SVRG for logistic regression objective
+
+    Parameters:
+        X (np.ndarray) : The training set
+        y (np.ndarray) : The target values
+        update_freq (int) : The number of iterations between every
+                            average gradient update
+        lr (float) : The learning rate (Default: 1e-3)
+
+    Returns:
+        Model weights (np.ndarray)
+    
+    .. R. Johnson, T. Zhang. Accelerating Stochastic Gradient Descent using
+           Predictive Variance Reduction. NIPS, 2013.
+    '''
+    grad_norm = eps + 1         
+    N = len(X)
+    m = len(X[0])
+    w = np.ones(m)
+    s_iter_count = 0
+    tot_iter_count = 0
+    loss = []
+    loss_s = []
+    grad_norms = []
+    # Initialize SVRG weights by performing a single SGD iteration on
+    # a random training example.
+    rand_ind = random.randint(0,N-1)
+    w_tilde_prev = lr*(y[rand_ind]-sigmoid(np.dot(w,X[rand_ind])))*X[rand_ind]
+    
+    # Choosing to optimize until convergence, I maintain a count on the
+    # outer iteration number, but semantically rely on convergence to
+    # determine when it is appropriate to stop
+    while grad_norm > eps:
+        w_tilde = w_tilde_prev
+        # Logging loss for this outer iteration
+        #loss_s.append(get_logistic_loss(X, y, w_tilde, 0))
+        mu_tilde = 0
+        # Calculate mu_tilde
+        for j in range(N):
+            # adding (1/N) times the gradient associated with the ith example
+            mu_tilde += (1/N)*(y[j]-sigmoid(np.dot(w,X[j])))*X[j]
+        # Finding the Euclidian norm of our objective's gradient
+        grad_norm = LA.norm(mu_tilde)
+        grad_norms.append(grad_norm)
+        print(grad_norm)
+        # If the convergence is reached, then skip the next inner loop
+        if grad_norm > eps:
+            w = w_tilde
+            #loss.append(get_logistic_loss(X, y, w, 0))
+            for j in range(update_freq):
+                rand_ind = random.randint(0,N-1)
+                w_grad = (y[rand_ind]-sigmoid(np.dot(w,X[rand_ind])))*X[rand_ind]
+                w_tilde_grad = (y[rand_ind]-sigmoid(np.dot(w_tilde,X[rand_ind])))*X[rand_ind]
+                # SVRG Update step. Note that our objective function is concave, so we are
+                # using gradient ascent
+                w = w + lr*(w_grad - w_tilde_grad + mu_tilde)
+                #loss.append(get_logistic_loss(X, y, w, 0))
+                tot_iter_count += 1
+        
+            # Updating the weights using option I from the paper
+            w_tilde_prev = w
+            s_iter_count += 1
+
+    return w_tilde, grad_norms, tot_iter_count, s_iter_count
+
+
 def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Iterate over frequencies (for each model)
     # Comparison with CVX perhaps?
     
     text_format = {'color': 'k', 'fontsize': 16}
+    freq = 10
+    w_sgd, grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+    plt.figure(1)
+    plt.plot(grad_norms_sgd)
+    plt.xlabel('Iteration Number, $r$', text_format)
+    plt.ylabel('$\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
+    plt.title('Convergence of SGD', text_format)
+    plt.savefig('SGD_Convergence_ex.png')
+
+    plt.figure(2)
+    plt.plot(grad_norms_svrg)
+    plt.xlabel('Iteration Number, $s$', text_format)
+    plt.ylabel('$\\|g(x^{(s)},\\xi_s)\\|_2$', text_format)
+    plt.title('Convergence of SVRG', text_format)
+    plt.savefig('SVRG_Convergence_ex.png')
     #title_text_format = {'color': 'k', 'fontsize': 16}
+    '''
     update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
     SVRG_ws = []
     SVRG_tot_iters = []
     SVRG_s_iters = []
     SVRG_accuracies = []
     for freq in update_freqs:
-        w, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+        w, grad_norms, tot_iters, s_iters = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
         SVRG_ws.append(w)
         SVRG_tot_iters.append(tot_iters)
         SVRG_s_iters.append(s_iters)
@@ -218,6 +285,8 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.ylabel('$\\tilde{\mu}$ Calculations', text_format)
     plt.title('Health Insurance: Number of $\\tilde{\mu}$ Calculations Until Convergence',text_format)
     plt.savefig('SVRG_health_insurance_avg_grad_calcs_v_freq.png')
+    '''
+    
     #w = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     #w = GD_logistic(X_train.to_numpy(), y_train.to_numpy(), 1e-4)
     
@@ -325,6 +394,7 @@ def main():
     HEART_ATTACK = 1
     FASHION_MNIST = 2
 
+    # Choose a dataset
     dataset = HEALTH_INSURANCE #[0, 1, 2]
 
     if dataset == HEALTH_INSURANCE:
@@ -338,7 +408,8 @@ def main():
     elif dataset == FASHION_MNIST:
         X_train, y_train = mnist_reader.load_mnist('data/fashion', kind='train')
         X_test, y_test = mnist_reader.load_mnist('data/fashion', kind='t10k')    
-    
+        print('single y val: {}'.format(y_train[0]))
+        print('single X shape: {}'.format(X_train[0].shape))
 
     # Pass along dataframes to experiment runner
     SVRG_testbed(X_train, y_train, X_test, y_test) 
