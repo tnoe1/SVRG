@@ -84,6 +84,8 @@ def SGD_logistic(X, y, init_lr=1, a=2, eps=0.01): # Before init_lr 1e-3, a =1.1
         # Adding because objective function is concave
         w = w + alpha_j*grad
         iter_num += 1
+        print('grad norms length: {}'.format(len(grad_norms)))
+        print('scaled grad norms length: {}'.format(len(scaled_grad_norms)))
     
     return w, grad_norms, scaled_grad_norms
 
@@ -183,9 +185,6 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     
     freq = 10
     w_sgd, grad_norms_sgd, scaled_grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
-    w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
-    iters = np.arange(len(grad_norms_svrg))
-    
     
     plt.figure(1)
     plt.plot(grad_norms_sgd)
@@ -200,6 +199,11 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.ylabel('$c(r)\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
     plt.title('Scaled Grad. Norm during SGD', text_format)
     plt.savefig('plots/SGD_Scaled_Full_Convergence_ex.png')
+
+    #w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+    #iters = np.arange(len(grad_norms_svrg))
+    
+    
 
     '''
     plt.figure(2)
