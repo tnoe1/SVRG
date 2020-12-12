@@ -180,7 +180,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     # Iterate over frequencies (for each model)
     # Comparison with CVX perhaps?
     
-    text_format = {'color': 'k', 'fontsize': 20}
+    text_format = {'color': 'k', 'fontsize': 18}
     
     '''
     freq = 10
@@ -231,9 +231,9 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.figure(1)
     plt.plot(update_freqs, total_gradient_calcs)
     plt.xlabel('Update Frequency, m', text_format)
-    plt.ylabel('num grad./$N$', text_format)
-    plt.title('Health Insurance: Number of Gradient Calculations Required to Converge', text_format)
-    plt.savefig('SVRG_health_normalized_grad_across_update_freq.png')
+    plt.ylabel('grad. calcs.$/N$', text_format)
+    plt.title('Health Insurance: Grad. Calcs Required for Convergence', text_format)
+    plt.savefig('plots/SVRG_health_normalized_grad_across_update_freq.png')
     '''
     plt.figure(1)
     plt.plot(update_freqs, SVRG_s_iters)
