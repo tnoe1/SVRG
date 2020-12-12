@@ -182,9 +182,12 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     
     text_format = {'color': 'k', 'fontsize': 20}
     
+    '''
     freq = 10
-    w_sgd, grad_norms_sgd, scaled_grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    #w_sgd, grad_norms_sgd, scaled_grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
     
+    w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+    #iters = np.arange(len(grad_norms_svrg))
     plt.figure(1)
     plt.plot(grad_norms_sgd)
     plt.xlabel('Iteration Number, $r$', text_format)
@@ -192,6 +195,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.title('Grad. Norm during SGD', text_format)
     plt.savefig('plots/SGD_Full_Convergence_ex.png')
 
+    
     plt.figure(2)
     plt.plot(scaled_grad_norms_sgd)
     plt.xlabel('Iteration Number, $r$', text_format)
@@ -199,12 +203,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.title('Scaled Grad. Norm during SGD', text_format)
     plt.savefig('plots/SGD_Scaled_Full_Convergence_ex.png')
 
-    #w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
-    #iters = np.arange(len(grad_norms_svrg))
     
-    
-
-    '''
     plt.figure(2)
     plt.plot(grad_norms_svrg)
     plt.xlabel('Iteration Number, $s$', text_format)
@@ -212,7 +211,8 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.title('Convergence Behavior of SVRG', text_format)
     plt.savefig('plots/SVRG_Convergence_ex.png')
     #title_text_format = {'color': 'k', 'fontsize': 16}
-   
+    '''
+    N = len(X_train)
     update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
     SVRG_ws = []
     SVRG_tot_iters = []
@@ -225,6 +225,16 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
         SVRG_s_iters.append(s_iters)
         SVRG_accuracies.append(accuracy(X_test.to_numpy(), y_test.to_numpy(), w))
 
+    SVRG_tot_it_np = np.array(SVRG_tot_iters)
+    SVRG_s_it_np = np.array(SVRG_s_iters)
+    total_gradient_calcs = (2*SVRG_tot_it_np + N*SVRG_s_it_np)/N  
+    plt.figure(1)
+    plt.plot(update_freqs, total_gradient_calcs)
+    plt.xlabel('Update Frequency, m', text_format)
+    plt.ylabel('num grad./$N$', text_format)
+    plt.title('Health Insurance: Number of Gradient Calculations Required to Converge', text_format)
+    plt.savefig('SVRG_health_normalized_grad_across_update_freq.png')
+    '''
     plt.figure(1)
     plt.plot(update_freqs, SVRG_s_iters)
     plt.xlabel('Update Frequency, m', text_format)
