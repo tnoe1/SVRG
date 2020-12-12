@@ -23,14 +23,13 @@ def sigmoid(x):
     ])
 
 
-def get_logistic_loss(X, y, w, reg):
+def get_logistic_loss(X, y, w):
     ''' Compute loss given the current weights
 
     Parameters:
         X (np.ndarray) : The training set
         y (np.ndarray) : The target values
         w (np.ndarray) : The model parameters
-        reg (float) : The regularization parameter
 
     Returns:
         A float representing the loss.
@@ -41,9 +40,6 @@ def get_logistic_loss(X, y, w, reg):
     for i in range(N):
         loss += (1/N)*(-y[i]*math.log(sigmoid(np.dot(w,X[i]))) 
                 - (1-y[i])*math.log(1-sigmoid(np.dot(w,X[i]))))
-    
-    for j in range(d):
-        loss += reg*w[j]**2
     
     return loss
 
@@ -70,6 +66,7 @@ def SGD_logistic(X, y, init_lr=1, a=2, eps=0.01): # Before init_lr 1e-3, a =1.1
     iter_num = 0
     grad_norms = []
     scaled_grad_norms = []
+    loss = []
     # If the gradient l2 norm falls below our specified epsilon value,
     # then we have attained convergence 
     while grad_norm > eps:
@@ -84,13 +81,14 @@ def SGD_logistic(X, y, init_lr=1, a=2, eps=0.01): # Before init_lr 1e-3, a =1.1
         scaled_grad_norms.append(scaled_grad_norm)
         # Adding because objective function is concave
         w = w + alpha_j*grad
+        loss.append(get_logistic_loss(X, y, w))
         iter_num += 1
     
-    return w, grad_norms, scaled_grad_norms
+    return w, grad_norms, scaled_grad_norms, loss
 
-
+'''
 def GD_logistic(X, y, lr=1e-3, max_iter=10000, epsilon=0.1):
-    '''Trains a logistic regression classifier using L2 regularization'''
+    #Trains a logistic regression classifier using L2 regularization
     N = len(X)
     num_features = len(X[0])
     w = np.ones(num_features)
@@ -107,6 +105,7 @@ def GD_logistic(X, y, lr=1e-3, max_iter=10000, epsilon=0.1):
     print('Grad. Norm at Convergence: {}'.format(grad_norm))
     print('Training Data Loss: {}'.format(get_logistic_loss(X, y, w, reg)))
     return w
+'''
 
 
 def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
@@ -166,14 +165,14 @@ def SVRG_logistic(X, y, update_freq, lr=0.5, eps=0.01):
                 # SVRG Update step. Note that our objective function is concave, so we are
                 # using gradient ascent
                 w = w + lr*(w_grad - w_tilde_grad + mu_tilde)
-                #loss.append(get_logistic_loss(X, y, w, 0))
+                loss.append(get_logistic_loss(X, y, w))
                 tot_iter_count += 1
         
             # Updating the weights using option I from the paper
             w_tilde_prev = w
             s_iter_count += 1
 
-    return w_tilde, grad_norms, tot_iter_count, s_iter_count
+    return w_tilde, grad_norms, tot_iter_count, s_iter_count, loss
 
 
 def SVRG_testbed(X_train, y_train, X_test, y_test):
@@ -182,11 +181,44 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     
     text_format = {'color': 'k', 'fontsize': 18}
     
-    '''
+    # Plotting training loss for chosen dataset
     freq = 10
-    #w_sgd, grad_norms_sgd, scaled_grad_norms_sgd = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
-    
-    w_svrg, grad_norms_svrg, _, _ = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+    w_sgd, grad_norms_sgd, scaled_grad_norms_sgd, sgd_loss = SGD_logistic(X_train.to_numpy(), y_train.to_numpy())
+    w_svrg, grad_norms_svrg, _, _, svrg_loss = SVRG_logistic(X_train.to_numpy(), y_train.to_numpy(), freq)
+
+    # Plotting training loss for heart disease dataset
+    plt.figure(1)
+    plt.plot(sgd_loss)
+    plt.xlabel('Iteration Number, $r$', text_format)
+    plt.ylabel('Training Loss', text_format)
+    plt.title('Heart Disease: Training Loss SGD', text_format)
+    plt.savefig('plots/SGD_Training_Loss_Heart_Disease.png')
+
+    plt.figure(2)
+    plt.plot(svrg_loss)
+    plt.xlabel('Iteration Number, $r$', text_format)
+    plt.ylabel('Training Loss', text_format)
+    plt.title('Heart Disease: Training Loss SVRG', text_format)
+    plt.savefig('plots/SVRG_Training_Loss_Heart_Disease.png')
+
+
+    '''
+    # Plotting training loss for health insurance dataset
+    plt.figure(1)
+    plt.plot(sgd_loss)
+    plt.xlabel('Iteration Number, $r$', text_format)
+    plt.ylabel('Training Loss', text_format)
+    plt.title('Health Insurance: Training Loss SGD', text_format)
+    plt.savefig('plots/SGD_Training_Loss_Health_Insurance.png')
+
+    plt.figure(2)
+    plt.plot(svrg_loss)
+    plt.xlabel('Iteration Number, $r$', text_format)
+    plt.ylabel('Training Loss', text_format)
+    plt.title('Health Insurance: Training Loss SVRG', text_format)
+    plt.savefig('plots/SVRG_Training_Loss_Health_Insurance.png')
+   
+   
     #iters = np.arange(len(grad_norms_svrg))
     plt.figure(1)
     plt.plot(grad_norms_sgd)
@@ -195,8 +227,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.title('Grad. Norm during SGD', text_format)
     plt.savefig('plots/SGD_Full_Convergence_ex.png')
 
-    
-    plt.figure(2)
+    # Plotting grad norm of SGD over iterations of r
     plt.plot(scaled_grad_norms_sgd)
     plt.xlabel('Iteration Number, $r$', text_format)
     plt.ylabel('$c(r)\\|g(x^{(r)},\\xi_r)\\|_2$', text_format)
@@ -204,14 +235,15 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.savefig('plots/SGD_Scaled_Full_Convergence_ex.png')
 
     
-    plt.figure(2)
+    # Plotting grad norm of SVRG over iteratiions of s
     plt.plot(grad_norms_svrg)
     plt.xlabel('Iteration Number, $s$', text_format)
     plt.ylabel('$\\|g(x^{(s)},\\xi_s)\\|_2$', text_format)
     plt.title('Convergence Behavior of SVRG', text_format)
     plt.savefig('plots/SVRG_Convergence_ex.png')
     #title_text_format = {'color': 'k', 'fontsize': 16}
-    '''
+    
+    # Plotting and calculating number of normalized gradients across update frequencies
     N = len(X_train)
     update_freqs = [2,5,10,15,20,25,30,35,40,45,50,75,100]
     SVRG_ws = []
@@ -234,7 +266,7 @@ def SVRG_testbed(X_train, y_train, X_test, y_test):
     plt.ylabel('grad. calcs.$/N$', text_format)
     plt.title('Health Insurance: Grad. Calcs Required for Convergence', text_format)
     plt.savefig('plots/SVRG_health_normalized_grad_across_update_freq.png')
-    '''
+    
     plt.figure(1)
     plt.plot(update_freqs, SVRG_s_iters)
     plt.xlabel('Update Frequency, m', text_format)
@@ -347,27 +379,18 @@ def load_clean_verif_data():
 
 def main():
     HEALTH_INSURANCE = 0
-    HEART_ATTACK = 1
-    #FASHION_MNIST = 2
+    HEART_DISEASE = 1
 
     # Choose a dataset
-    dataset = HEALTH_INSURANCE #[0, 1, 2]
+    dataset = HEART_DISEASE #[0, 1, 2]
 
     if dataset == HEALTH_INSURANCE:
         X_train, y_train, X_test, y_test = load_clean_verif_data()       
  
-    elif dataset == HEART_ATTACK:
+    elif dataset == HEART_DISEASE:
         data = pd.read_csv('data/heart/heart.csv')
         n_data = data_normalize(data, exempt_labels=['target'])
         X_train, y_train, X_test, y_test = data_split(n_data)
-
-    #elif dataset == FASHION_MNIST:
-        #X_train, y_train = mnist_reader.load_mnist('data/fashion', kind='train')
-        #X_test, y_test = mnist_reader.load_mnist('data/fashion', kind='t10k')
-        #freq = 20    
-        #W = SVRG_multiclass_logistic(X_train, y_train, freq)
-        #print('single y val: {}'.format(y_train))
-        #print('single X shape: {}'.format(X_train[0].shape))
 
     # Pass along dataframes to experiment runner
     SVRG_testbed(X_train, y_train, X_test, y_test) 
