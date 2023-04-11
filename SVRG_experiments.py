@@ -1,6 +1,5 @@
 # Thomas Noel
-# CS 539
-# Final Project
+# December 2020
 #
 # Implements the SVRG algorithm for binary logistic regression
 
